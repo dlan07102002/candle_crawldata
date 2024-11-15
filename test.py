@@ -2,7 +2,6 @@ import html
 import requests
 from bs4 import BeautifulSoup
 import csv
-import time
 
 category_id = 1
 product_id = 1
@@ -36,10 +35,11 @@ def fetch_products_from_page(url):
         
         for li in li_list:
             product_name = li.find("h4", class_="mb-1").get_text(strip=True) if li.find("h4") else "Unknown Product"
-            sell_price = li.find("p", class_="cl-product-card__price").get_text(strip=True) if li.find("p") else "0"
+            list_price = li.find("p", class_="cl-product-card__price").get_text(strip=True) if li.find("p") else "0"
             description = li.find("p", class_="small-body mb-2").text if li.find("p", class_="small-body mb-2") else "No description"
             
-           
+            detail_description_tag = soup.find("div", class_="yotpo bottomLine")
+            detail_description = detail_description_tag.get("data-description", "") if detail_description_tag else None
 
             image_url_tag = li.find("img", class_="lazyload")
             image_url = image_url_tag["data-src"] if image_url_tag else "No image"
@@ -48,20 +48,13 @@ def fetch_products_from_page(url):
             if category not in categories:
                 categories[category] = category_id
                 category_id += 1
-                
-            detail_description_tag = soup.find("div", class_="yotpo bottomLine")
-            detail_description = None
-                # Kiểm tra và lấy dữ liệu detail_description từ thuộc tính data-description
-            if detail_description_tag:
-                detail_description_data = detail_description_tag["data-description"]
-                detail_description = detail_description_tag["data-description"]
-                    # Tạo BeautifulSoup để parse nội dung HTML trong data-description
-                # inner_soup = BeautifulSoup(detail_description_data, "html.parser")
 
+            if detail_description and "<p>" in detail_description:
+                detail_description = detail_description[3:-4]
             
             images.append([product_id, image_url])
             category_product.append([product_id, categories[category]])
-            products.append([product_id, product_name, sell_price[1:], description, detail_description])
+            products.append([product_id, product_name, list_price[1:], description, detail_description])
             product_id += 1
         
         return True
@@ -71,8 +64,9 @@ def fetch_products_from_page(url):
 
 url = "https://www.candle-lite.com/collections/all-products"
 page = 1
+MAX_PAGES = 50  # Giới hạn số trang
 
-while True:
+while page <= MAX_PAGES:
     url_page = f"{url}?page={page}"
     res = fetch_products_from_page(url_page)
     
@@ -81,32 +75,5 @@ while True:
         break
 
     page += 1
-    time.sleep(2)
-    
-    
 
 print(f"Scraping completed at page {page}.")
-
-with open('products.csv', mode='w', newline='', encoding='utf-8') as product_file:
-    writer = csv.writer(product_file)
-    writer.writerow(["Product Id", "Product Name", "Sell Price", "Description", "Detail Description"])
-    writer.writerows(products)
-
-with open('categories.csv', mode='w', newline='', encoding='utf-8') as category_file:
-    writer = csv.writer(category_file)
-    writer.writerow(["Category Name", "Category Id"])
-    for key, value in categories.items():
-        writer.writerow([key, value])
-        
-with open('category_product.csv', mode='w', newline='', encoding='utf-8') as category_product_file:
-    writer = csv.writer(category_product_file)
-    writer.writerow(["Product Id", "Category Id"])
-    writer.writerows(category_product)
-
-with open('images.csv', mode='w', newline='', encoding='utf-8') as image_file:
-    writer = csv.writer(image_file)
-    writer.writerow(["Product Id", "Link"])
-    writer.writerows(images)
-
-
-
