@@ -1,4 +1,5 @@
 import html
+import json
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -10,6 +11,56 @@ categories = {}
 products = []
 category_product = []
 images = []
+
+def extract_description(html_string):
+    # Sử dụng BeautifulSoup để phân tích HTML
+    soup = BeautifulSoup(html_string, 'html.parser')
+    
+    # Tìm thẻ <span> chứa dữ liệu mô tả
+    span_tag = soup.find('span', {'data-sheets-value': True})
+    
+    if span_tag:
+        # Trích xuất chuỗi mô tả sản phẩm từ thuộc tính data-sheets-value
+        description_data = span_tag['data-sheets-value']
+        
+        # Chuyển dữ liệu từ chuỗi JSON sang dictionary
+        try:
+            description_json = json.loads(description_data)
+            # Truy xuất giá trị mô tả
+            description = description_json.get("2", "No description available")
+            return description
+        except json.JSONDecodeError:
+            return "Error parsing description data"
+    else:
+        return "No description found"
+    
+def extract_description2(html_string):
+    # Sử dụng BeautifulSoup để phân tích cú pháp HTML
+    soup = BeautifulSoup(html_string, 'html.parser')
+    
+    # Tìm thẻ <span> có dữ liệu mô tả
+    description_tag = soup.find('span', {'data-sheets-value': True})
+    
+    if description_tag:
+        # Trích xuất nội dung văn bản từ thẻ <span>
+        description = description_tag.get_text(strip=True)
+        return description
+    else:
+        return "No description found"
+    
+def extract_description3(html_string):
+    # Sử dụng BeautifulSoup để phân tích cú pháp HTML
+    soup = BeautifulSoup(html_string, 'html.parser')
+    
+    # Tìm thẻ <span> có dữ liệu mô tả
+    description_tag = soup.find('span', {'data-sheets-value': True})
+    
+    if description_tag:
+        # Trích xuất nội dung văn bản từ thẻ <span>
+        description = description_tag.get_text(strip=True)
+        return description
+    else:
+        return "No description found"
 
 def fetch_products_from_page(url):
     global category_id, product_id
@@ -39,7 +90,6 @@ def fetch_products_from_page(url):
             sell_price = li.find("p", class_="cl-product-card__price").get_text(strip=True) if li.find("p") else "0"
             description = li.find("p", class_="small-body mb-2").text if li.find("p", class_="small-body mb-2") else "No description"
             
-           
 
             image_url_tag = li.find("img", class_="lazyload")
             image_url = image_url_tag["data-src"] if image_url_tag else "No image"
@@ -49,19 +99,25 @@ def fetch_products_from_page(url):
                 categories[category] = category_id
                 category_id += 1
                 
-            detail_description_tag = soup.find("div", class_="yotpo bottomLine")
             detail_description = None
-                # Kiểm tra và lấy dữ liệu detail_description từ thuộc tính data-description
-            if detail_description_tag:
-                detail_description_data = detail_description_tag["data-description"]
+            detail_description_tag = soup.find("div", class_="yotpo bottomLine")
+            if detail_description_tag and "data-description" in detail_description_tag.attrs:
                 detail_description = detail_description_tag["data-description"]
-                    # Tạo BeautifulSoup để parse nội dung HTML trong data-description
-                # inner_soup = BeautifulSoup(detail_description_data, "html.parser")
+            
+           
+            if detail_description.__contains__('<meta'):
+                detail_description = extract_description(detail_description)
+            elif detail_description.__contains__('<style'):
+                detail_description = extract_description2(detail_description)
+            elif detail_description.__contains__('<span'):
+                detail_description = extract_description3(detail_description)
+            else:
+                pass
 
             
             images.append([product_id, image_url])
             category_product.append([product_id, categories[category]])
-            products.append([product_id, product_name, sell_price[1:], description, detail_description])
+            products.append([product_id, product_name, sell_price[1:], description, detail_description.replace('\n', '') ])
             product_id += 1
         
         return True
@@ -81,7 +137,7 @@ while True:
         break
 
     page += 1
-    time.sleep(2)
+    # time.sleep(2)
     
     
 
