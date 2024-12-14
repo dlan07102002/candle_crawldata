@@ -95,4 +95,3 @@ class CF:
                 print(f'  Recommend these products {top_5_items} to user {u}')
             else:
                 print(f'  Recommend product with id: {u} to users {top_5_items}')
-
