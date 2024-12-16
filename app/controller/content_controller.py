@@ -2,12 +2,13 @@ from flask import Blueprint, jsonify
 
 from candlelight.app.models.content_model import ProductModel
 
+
 # Khởi tạo blueprint cho content
 content_blueprint = Blueprint('content', __name__)
 
 # Route cho API content
 @content_blueprint.route("/<int:product_id>", methods=["GET"])
-def get_recommendations(product_id):
+def get_cb_recommendation(product_id):
     product_model = ProductModel()
 
     # Kiểm tra nếu dữ liệu sản phẩm trống

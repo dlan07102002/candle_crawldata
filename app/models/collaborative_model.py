@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 
-from candlelight.app.filter.collaborative_filter import CF
+from candlelight.app.rcm_method.collaborative_filter import CF
 
 
 class RecommendationModel:
@@ -12,11 +12,11 @@ class RecommendationModel:
         self.df_products = pd.read_sql("SELECT user_id, product_id, rate FROM reviews", self.engine)
 
         # Chuyển đổi dữ liệu thành numpy array để xử lý
-        self.Y_data = self.df_products.to_numpy()
-        self.Y_data = self.Y_data.astype(int)
+        self.utility = self.df_products.to_numpy()
+        self.utility = self.utility.astype(int)
 
         # Khởi tạo hệ thống recommendation
-        self.rs = CF(self.Y_data, k=32, uuCF=0)
+        self.rs = CF(self.utility, k=32, CF_type=0)
         self.rs.fit()
 
 
@@ -26,13 +26,21 @@ class RecommendationModel:
         return self.rs.recommend(user_id)
 
     def evaluate(self):
-        # Đánh giá mô hình bằng RMSE
-        n_tests = self.Y_data.shape[0]
+        # Đánh giá mô hình bằng RMSE, MSE, MAE
+        n_tests = self.utility.shape[0]
         SE = 0  # Squared error
-
+        AE = 0  # Absolute error
         for n in range(n_tests):
-            pred = self.rs.pred(self.Y_data[n, 0], self.Y_data[n, 1], normalized=0)
-            SE += (pred - self.Y_data[n, 2]) ** 2
-
+            pred = self.rs.pred(self.utility[n, 0], self.utility[n, 1], normalized=0)
+            SE += (pred - self.utility[n, 2]) ** 2
+            AE += abs(pred - self.utility[n, 2])
+        MSE = (SE / n_tests)
         RMSE = np.sqrt(SE / n_tests)
-        return RMSE
+        MAE = AE/n_tests
+
+        res = {}
+        res["RMSE"] = RMSE
+        res["MSE"] = MSE
+        res["MAE"] = MAE
+
+        return res

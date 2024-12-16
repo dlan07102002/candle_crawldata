@@ -14,7 +14,6 @@ class ProductModel:
         self._load_data()
 
     def _init_engine(self):
-        """Khởi tạo SQLAlchemy engine."""
         try:
             self.engine = create_engine("mysql+mysqlconnector://spring:spring@localhost/candlelight_dev")
         except Exception as e:
@@ -28,8 +27,8 @@ class ProductModel:
             return
 
         try:
-            # Đọc dữ liệu từ bảng products và liên kết
-            query = """
+            # Đọc dữ liệu từ bảng products và liên kế
+            self.df_products = pd.read_sql("""
                 SELECT 
                     p.product_id, 
                     description, 
@@ -41,8 +40,7 @@ class ProductModel:
                 JOIN product_category pc ON p.product_id = pc.product_id  
                 JOIN categories c ON c.category_id = pc.category_id 
                 ORDER BY p.product_id
-            """
-            self.df_products = pd.read_sql(query, self.engine)
+            """, self.engine)
 
             if self.df_products.empty:
                 raise ValueError("Table 'products' is empty!")

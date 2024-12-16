@@ -5,9 +5,6 @@ from candlelight.app.models.collaborative_model import RecommendationModel
 # Khởi tạo blueprint cho collaborative
 collaborative_blueprint = Blueprint('collaborative', __name__)
 
-# Khởi tạo mô hình recommendation
-
-
 # Route cho API collaborative
 @collaborative_blueprint.route("/<int:user_id>", methods=["GET"])
 def get_collaborative_recommendations(user_id):
@@ -23,7 +20,7 @@ def get_collaborative_recommendations(user_id):
 def get_collaborative_evaluate():
     try:
         recommendation_model = RecommendationModel()
-        return jsonify({ "collaborative_evaluate": recommendation_model.evaluate()})
+        return jsonify( recommendation_model.evaluate())
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
